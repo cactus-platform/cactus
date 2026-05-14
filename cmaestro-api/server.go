@@ -27,7 +27,7 @@ func main() {
 	// status
 
 	// registry
-	// List every images hosted on local docker registry
+	// List every image hosted on local docker registry
 
 	// registry/create (update-in-place)
 	// registry/list
