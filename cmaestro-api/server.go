@@ -42,13 +42,13 @@ func main() {
 
 	//r.ListenAndServe(":8080")
 
-	funcs := cingest.Ingest(`from cactuskit import ApiMethod, ApiProtocol, HttpStatus, cactuize
+	cactuizedFunctions := cingest.Ingest(`from cactuskit import ApiMethod, ApiProtocol, HttpStatus, cactuize
 
 @cactuize()
 def simple_entrypoint():
     return f"Hello World from {simple_entrypoint}"`)
 
-	fmt.Println(funcs)
+	fmt.Println(cactuizedFunctions)
 }
 
 func getUsers(w http.ResponseWriter, _ *http.Request) {

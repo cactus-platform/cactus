@@ -1,7 +1,10 @@
 package cmaestro_ingest
 
+import "fmt"
+
 func Ingest(data string) []Function {
+	fmt.Println("Ingesting", data)
 	return []Function{
-		{Name: "simple_entrypoint"},
+		NewFunction("simple_entrypoint", "string"),
 	}
 }
