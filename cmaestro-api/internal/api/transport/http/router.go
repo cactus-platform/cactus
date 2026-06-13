@@ -1,6 +1,7 @@
 package httptransport
 
 import (
+	"cmaestro-api/internal/config"
 	"net/http"
 
 	v1 "cmaestro-api/internal/api/v1"
@@ -10,7 +11,7 @@ import (
 )
 
 // NewRouter creates a chi router, applies common middleware and registers API routes.
-func NewRouter() *chi.Mux {
+func NewRouter(cfg *config.Config) *chi.Mux {
 	r := chi.NewRouter()
 
 	// common middleware
@@ -22,7 +23,7 @@ func NewRouter() *chi.Mux {
 	// versioned API registration
 	r.Route("/api", func(sr chi.Router) {
 		sr.Route("/v1", func(rchi chi.Router) {
-			v1.RegisterRoutes(rchi)
+			v1.RegisterRoutes(rchi, cfg)
 		})
 	})
 

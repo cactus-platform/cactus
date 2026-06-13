@@ -1,14 +1,22 @@
 package repositories
 
 import (
+	"cmaestro-api/internal/api/transport/http/request"
+	"cmaestro-api/internal/api/transport/http/response"
+	"cmaestro-api/internal/config"
 	"encoding/json"
+	"mime/multipart"
 	"net/http"
 )
 
-type Handler struct{}
+type Handler struct {
+	Config *config.Config
+}
 
-func NewHandler() *Handler {
-	return &Handler{}
+func NewHandler(cfg *config.Config) *Handler {
+	return &Handler{
+		Config: cfg,
+	}
 }
 
 /*
@@ -36,6 +44,21 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	c := h.Config.Repositories
+
+	err := request.WithMultipartFile(r, c.SourceCodeUploadKey, c.MaxUploadSize,
+		func(file multipart.File, header *multipart.FileHeader) error {
+			// use file here
+			return nil
+		})
+
+	if err != nil {
+		response.Fail(
+			w,
+			c.Errors.ErrorNameWhenUploadFails,
+		)
+		return
+	}
 
 	resp := map[string]any{
 		"status":     "created",                  // "created" | "updated" | "failed"
@@ -50,5 +73,6 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		"updated_at": "1970-01-01 00:00:01",      // latest submission received at
 	}
 
-	json.NewEncoder(w).Encode(resp)
+	response.Created(w, resp)
+	//json.NewEncoder(w).Encode(resp)
 }

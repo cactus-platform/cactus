@@ -2,6 +2,7 @@ package main
 
 import (
 	httptransport "cmaestro-api/internal/api/transport/http"
+	"cmaestro-api/internal/config"
 	cmaestro_db "cmaestro-db"
 	cregistry "cmastero-registry"
 	"fmt"
@@ -20,7 +21,8 @@ Infrastructure Requirements
 */
 
 func main() {
-	r := httptransport.NewRouter()
+	app := config.Load()
+	r := httptransport.NewRouter(app)
 
 	// **************************************** SERVICES ****************************************
 	// system
