@@ -3,8 +3,6 @@ package users
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/go-chi/chi/v5"
 )
 
 type Handler struct{}
@@ -13,15 +11,38 @@ func NewHandler() *Handler {
 	return &Handler{}
 }
 
-// UsersList returns a simple users list.
-func (h *Handler) UsersList(w http.ResponseWriter, _ *http.Request) {
+/*
+func NewHandler(
+	userService *service.UserService,
+	logger *slog.Logger,
+) *Handler {
+	return &Handler{
+		service: userService,
+		logger:  logger,
+	}
+}
+*/
+
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	users := []string{"admin"}
+
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
+
+	if err := json.NewEncoder(w).Encode(users); err != nil {
+		http.Error(w, "internal error", http.StatusInternalServerError)
+		return
+	}
 }
 
-func RegisterRoutes(r chi.Router) {
-	h := NewHandler()
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id")
+	// or chi.URLParam(r, "id")
 
-	r.Get("/", h.UsersList)
+	resp := map[string]string{
+		"id":   id,
+		"name": "admin",
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
