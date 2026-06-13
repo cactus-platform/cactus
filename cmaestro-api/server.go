@@ -1,14 +1,12 @@
 package main
 
 import (
-	"cmaestro-api/internal/router"
+	httptransport "cmaestro-api/internal/api/transport/http"
 	cmaestro_db "cmaestro-db"
 	cregistry "cmastero-registry"
-	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
-
-	"github.com/go-chi/chi/v5/middleware"
 )
 
 /*
@@ -22,15 +20,7 @@ Infrastructure Requirements
 */
 
 func main() {
-	r := router.NewRouter()
-
-	// Middlewares Configuration
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
-	r.Use(middleware.Recoverer)
-
-	r.Get("/users", getUsers)
+	r := httptransport.NewRouter()
 
 	// **************************************** SERVICES ****************************************
 	// system
@@ -51,7 +41,9 @@ func main() {
 	// All these previous methods could be authenticated and authorised (feature available later)
 	// ******************************************************************************************
 
-	//r.ListenAndServe(":8080")
+	if err := http.ListenAndServe(":8080", r); err != nil {
+		log.Fatal(err)
+	}
 
 	/*cactuizedFunctions := cingest.Ingest(`from cactuskit import ApiMethod, ApiProtocol, HttpStatus, cactuize
 
@@ -85,9 +77,4 @@ func main() {
 	fmt.Printf("Value as key='{%s}' %s | err={%v}", k, v, err)
 }
 
-func getUsers(w http.ResponseWriter, _ *http.Request) {
-	users := []string{"admin"}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(users)
-}
+// note: v1.UsersList handles the `/api/v1/users` route
