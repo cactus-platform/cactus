@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cmaestro-kafka
+  labels:
+    cmaestro/metadata.name: cmaestro-kafka
+    cmaestro/metadata.kind: system
+    cmaestro/metadata.system.name: kafka
+    cmaestro/metadata.priority: absolute
