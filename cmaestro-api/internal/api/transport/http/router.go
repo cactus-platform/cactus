@@ -1,6 +1,7 @@
 package httptransport
 
 import (
+	"cmaestro-api/internal/api/transport/http/response"
 	"cmaestro-api/internal/config"
 	"net/http"
 
@@ -30,7 +31,17 @@ func NewRouter(cfg *config.Config) *chi.Mux {
 	// healthcheck
 	r.Get("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("ok"))
+		resp := map[string]any{
+			"status": "ok",
+			"core": map[string]any{
+				"registry": {
+					"status": "ok",
+				},
+			},
+			"time": 6,
+		}
+
+		response.OK(w, resp)
 	})
 
 	return r
