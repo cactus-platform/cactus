@@ -34,9 +34,7 @@ func NewRouter(cfg *config.Config) *chi.Mux {
 		resp := map[string]any{
 			"status": "ok",
 			"core": map[string]any{
-				"registry": {
-					"status": "ok",
-				},
+				"registry": "ok",
 			},
 			"time": 6,
 		}

@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka
+  namespace: cmaestro-kafka
+spec:
+  serviceName: kafka-headless
+  replicas: 3
+  selector:
+    matchLabels:
+      app: kafka
+  template:
+    metadata:
+      labels:
+        app: kafka
+    spec:
+      containers:
+        - name: kafka
+          image: apache/kafka:3.7.0
+          imagePullPolicy: IfNotPresent
+
+          env:
+            - name: CLUSTER_ID
+              value: "4L6g3nShT-eMCtK-X86sw"
+
+          command:
+            - sh
+            - -euc
+            - |
+              export BROKER_ID="${HOSTNAME##*-}"
+              export POD_NAME="${HOSTNAME}"
+
+              sed \
+                -e "s|\${BROKER_ID}|${BROKER_ID}|g" \
+                -e "s|\${POD_NAME}|${POD_NAME}|g" \
+                /opt/kafka/config/server.properties.template > /tmp/server.properties
+
+              if [ ! -f /var/lib/kafka/data/meta.properties ]; then
+                /opt/kafka/bin/kafka-storage.sh format \
+                  -t "$CLUSTER_ID" \
+                  -c /tmp/server.properties
+              fi
+
+              exec /opt/kafka/bin/kafka-server-start.sh /tmp/server.properties
+
+          ports:
+            - containerPort: 9092
+              name: broker
+            - containerPort: 9093
+              name: controller
+
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /var/lib/kafka/data
+            - name: kafka-config
+              mountPath: /opt/kafka/config/server.properties.template
+              subPath: server.properties.template
+
+      volumes:
+        - name: kafka-config
+          configMap:
+            name: kafka-config
+
+  volumeClaimTemplates:
+    - metadata:
+        name: kafka-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi

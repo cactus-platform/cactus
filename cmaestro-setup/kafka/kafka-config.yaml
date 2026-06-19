@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-config
+  namespace: cmaestro-kafka
+data:
+  server.properties.template: |
+    process.roles=broker,controller
+    node.id=${BROKER_ID}
+
+    controller.quorum.voters=0@kafka-0.kafka-headless.cmaestro-kafka.svc.cluster.local:9093,1@kafka-1.kafka-headless.cmaestro-kafka.svc.cluster.local:9093,2@kafka-2.kafka-headless.cmaestro-kafka.svc.cluster.local:9093
+    controller.listener.names=CONTROLLER
+
+    listeners=PLAINTEXT://:9092,CONTROLLER://:9093
+    advertised.listeners=PLAINTEXT://${POD_NAME}.kafka-headless.cmaestro-kafka.svc.cluster.local:9092
+
+    listener.security.protocol.map=PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+    inter.broker.listener.name=PLAINTEXT
+
+    log.dirs=/var/lib/kafka/data
+
+    num.partitions=3
+    default.replication.factor=3
+    min.insync.replicas=2
+
+    offsets.topic.replication.factor=3
+    transaction.state.log.replication.factor=3
+    transaction.state.log.min.isr=2
