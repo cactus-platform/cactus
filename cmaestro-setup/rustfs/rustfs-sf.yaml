@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: rustfs
+  namespace: cmaestro-db
+spec:
+  serviceName: rustfs-headless
+  replicas: 2
+  podManagementPolicy: Parallel
+
+  selector:
+    matchLabels:
+      app: rustfs
+
+  template:
+    metadata:
+      labels:
+        app: rustfs
+
+    spec:
+      securityContext:
+        fsGroup: 10001
+        fsGroupChangePolicy: OnRootMismatch
+
+      containers:
+        - name: rustfs
+          image: rustfs/rustfs:1.0.0-beta.8
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 9000
+            - name: console
+              containerPort: 9001
+
+          envFrom:
+            - configMapRef:
+                name: rustfs-config
+
+          env:
+            - name: RUSTFS_VOLUMES
+              value: "http://rustfs-{0...9}.rustfs-headless.cmaestro-db.svc.cluster.local:9000/data"
+
+            - name: RUSTFS_ADDRESS
+              value: "0.0.0.0:9000"
+
+            - name: RUSTFS_CONSOLE_ADDRESS
+              value: "0.0.0.0:9001"
+
+          securityContext:
+            runAsUser: 10001
+            runAsGroup: 10001
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+          volumeMounts:
+            - name: rustfs-data
+              mountPath: /data
+  
+  volumeClaimTemplates:
+    - metadata:
+        name: rustfs-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+      
+#    startupProbe:
+#      httpGet:
+#        path: /health
+#        port: http
+#      periodSeconds: 10
+#      failureThreshold: 30
+
+#    readinessProbe:
+#      httpGet:
+#        path: /health
+#        port: http
+#      periodSeconds: 10
+#      failureThreshold: 6
+
+#    livenessProbe:
+#      httpGet:
+#        path: /health
+#        port: http
+#      periodSeconds: 30
+#      failureThreshold: 3

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rustfs-config
+  namespace: cmaestro-db
+data:
+  RUSTFS_CONSOLE_ENABLE: "true"

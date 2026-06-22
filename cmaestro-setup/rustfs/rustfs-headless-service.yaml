@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: rustfs-headless
+  namespace: cmaestro-db
+spec:
+  publishNotReadyAddresses: true
+  clusterIP: None
+  ports:
+  - name: http
+    port: 9000
+    targetPort: 9000
+  selector:
+    app: rustfs
