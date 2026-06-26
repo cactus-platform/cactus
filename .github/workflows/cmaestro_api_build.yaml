@@ -8,17 +8,18 @@ on:
   pull_request:
 
 jobs:
-
   build:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Go
-      uses: actions/setup-go@v4
-      with:
-        go-version: '1.26.3'
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.26.3"
 
-    - name: Build
-      run: go build cmaestro-api/cmd/api
+      - name: Create Build Directory
+        run: mkdir bin
+      - name: Build
+        run: go build -v -o bin/cmaestro-api cmaestro-api/cmd/api
 
