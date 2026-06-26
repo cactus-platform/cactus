@@ -7,6 +7,11 @@ on:
   push:
   pull_request:
 
+env:
+  BIN_NAME: cmaestro-api
+  BIN_FOLDER: bin
+  PACKAGE_PATH: cmaestro-api/cmd/api
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,7 +24,13 @@ jobs:
           go-version: "1.26.3"
 
       - name: Create Build Directory
-        run: mkdir bin
-      - name: Build
-        run: go build -v -o bin/cmaestro-api cmaestro-api/cmd/api
+        run: mkdir $BIN_FOLDER
 
+      - name: Build Cmaestro-API
+        run: go build -v -o $BIN_FOLDER/$BIN_NAME $PACKAGE_PATH
+
+      - name: Upload Cmaestro-API as an artifact  
+        uses: actions/upload-artifact@v4
+        with:
+          name: $BIN_NAME
+          path: $BIN_FOLDER
