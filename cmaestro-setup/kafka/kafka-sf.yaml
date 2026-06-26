@@ -4,7 +4,7 @@ metadata:
   name: kafka
   namespace: cmaestro-kafka
 spec:
-  serviceName: kafka-headless
+  serviceName: kafka
   replicas: 3
   selector:
     matchLabels:

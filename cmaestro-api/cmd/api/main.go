@@ -3,8 +3,9 @@ package main
 import (
 	httptransport "cmaestro-api/internal/api/transport/http"
 	"cmaestro-api/internal/config"
-	cmaestro_db "cmaestro-db"
+	cmaestro_db "cmaestro-db/keyval"
 	cregistry "cmastero-registry"
+	"context"
 	"fmt"
 	"log"
 	"net/http"
@@ -21,8 +22,13 @@ Infrastructure Requirements
 */
 
 func main() {
-	app := config.Load()
-	r := httptransport.NewRouter(app)
+	//app := config.Load()
+	ctx := context.Background()
+	appv2, err := config.NewAppContext(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
+	r := httptransport.NewRouter(appv2)
 
 	// **************************************** SERVICES ****************************************
 	// system
@@ -69,7 +75,7 @@ func main() {
 		DB:       0,
 	})
 
-	err := db.Set("hello", "world", -1)
+	db.Set("hello", "world", -1)
 	if err != nil {
 		return
 	}

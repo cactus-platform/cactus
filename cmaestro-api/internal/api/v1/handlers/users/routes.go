@@ -7,12 +7,12 @@ import (
 )
 
 type Handler struct {
-	Config *config.Config
+	App *config.AppContext
 }
 
-func NewHandler(cfg *config.Config) *Handler {
+func NewHandler(app *config.AppContext) *Handler {
 	return &Handler{
-		Config: cfg,
+		App: app,
 	}
 }
 

@@ -10,12 +10,12 @@ import (
 )
 
 type Handler struct {
-	Config *config.Config
+	App *config.AppContext
 }
 
-func NewHandler(cfg *config.Config) *Handler {
+func NewHandler(app *config.AppContext) *Handler {
 	return &Handler{
-		Config: cfg,
+		App: app,
 	}
 }
 
@@ -44,7 +44,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := h.Config.Repositories
+	c := h.App.Config.Repositories
 
 	err := request.WithMultipartFile(r, c.SourceCodeUploadKey, c.MaxUploadSize,
 		func(file multipart.File, header *multipart.FileHeader) error {

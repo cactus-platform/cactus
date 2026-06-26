@@ -32,10 +32,15 @@ metadata:
   labels:
     app.kubernetes.io/name: seaweedfs
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app.kubernetes.io/name: seaweedfs
   ports:
     - name: s3
       port: 8333
       targetPort: s3
+      nodePort: 30833
+    - name: filer
+      port: 8888
+      targetPort: filer
+      nodePort: 30888

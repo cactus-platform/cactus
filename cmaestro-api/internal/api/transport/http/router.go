@@ -12,7 +12,7 @@ import (
 )
 
 // NewRouter creates a chi router, applies common middleware and registers API routes.
-func NewRouter(cfg *config.Config) *chi.Mux {
+func NewRouter(app *config.AppContext) *chi.Mux {
 	r := chi.NewRouter()
 
 	// common middleware
@@ -24,7 +24,7 @@ func NewRouter(cfg *config.Config) *chi.Mux {
 	// versioned API registration
 	r.Route("/api", func(sr chi.Router) {
 		sr.Route("/v1", func(rchi chi.Router) {
-			v1.RegisterRoutes(rchi, cfg)
+			v1.RegisterRoutes(rchi, app)
 		})
 	})
 
