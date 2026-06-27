@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	SourceCodeUploadKey string `json:"sourceCodeUploadKey"`
+	SourceCodeIdKey     string `json:"sourceCodeIdKey"`
 	MaxUploadSize       int64  `json:"maxUploadSize"`
 	Errors              *Errors
 }
@@ -18,9 +19,11 @@ type Errors struct {
 
 func Load() *Config {
 	SCUK := "platform.cactus.repository.source"
+	SCIK := "platform.cactus.repository.id"
 
 	return &Config{
 		SourceCodeUploadKey: SCUK,
+		SourceCodeIdKey:     SCIK,
 		MaxUploadSize:       10 << 20,
 		Errors: &Errors{
 			ErrorNameWhenUploadFails: response.APIError{

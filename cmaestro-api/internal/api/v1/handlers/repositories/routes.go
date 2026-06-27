@@ -53,7 +53,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	c := h.App.Config.Repositories
 
-	subId := uuid.NewString()
+	var sourceCodeRepositoryId string
+	if id := r.FormValue(c.SourceCodeIdKey); id != "" {
+		sourceCodeRepositoryId = id
+	} else {
+		sourceCodeRepositoryId = uuid.New().String()
+	}
+
 	subCreatedAt := time.Now()
 
 	data, err := request.WithMultipartFile(
@@ -67,7 +73,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				r.Context(),
 				file,
 				header.Size,
-				fmt.Sprintf("uploads/repositories/%s/%s.zip", subId, subId),
+				fmt.Sprintf("uploads/repositories/%s/%s.zip", sourceCodeRepositoryId, sourceCodeRepositoryId),
 			)
 			if err != nil {
 				return nil, fmt.Errorf("upload ZIP to SeaweedFS: %w", err)
@@ -105,7 +111,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	resp := map[string]any{
 		"status":     "created",                               // "created" | "updated" | "failed"
-		"id":         subId,                                   // upload id
+		"id":         sourceCodeRepositoryId,                  // upload id
 		"name":       "admin",                                 // repository id
 		"path":       path.Join(uploaded.Bucket, artifactKey), // submission path
 		"size":       artifactSize,                            // submission size (only attached file, body params doesn't count)
