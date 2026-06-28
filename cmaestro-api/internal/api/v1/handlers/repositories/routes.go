@@ -5,6 +5,7 @@ import (
 	"cmaestro-api/internal/api/transport/http/response"
 	"cmaestro-api/internal/config"
 	"cmaestro-db/bucket"
+	"cmaestro-db/dbutil"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -60,7 +61,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		sourceCodeRepositoryId = uuid.New().String()
 	}
 
+	subId := uuid.New().String()
 	subCreatedAt := time.Now()
+	var artifactHash string
 
 	data, err := request.WithMultipartFile(
 		r,
@@ -69,17 +72,21 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		func(file multipart.File, header *multipart.FileHeader) (any, error) {
 			defer file.Close()
 
+			// Hash
+
 			object, err := h.App.ArtifactDB.UploadZip(
 				r.Context(),
 				file,
 				header.Size,
-				fmt.Sprintf("uploads/repositories/%s/%s.zip", sourceCodeRepositoryId, sourceCodeRepositoryId),
+				fmt.Sprintf("uploads/repositories/%s/%s.zip", sourceCodeRepositoryId, subId),
 			)
 			if err != nil {
 				return nil, fmt.Errorf("upload ZIP to SeaweedFS: %w", err)
 			}
 
 			log.Printf("uploaded %s (%d bytes)", object.Key, object.Size)
+
+			artifactHash = dbutil.NewHasherReader(file).Hash()
 
 			return &object, nil
 		},
@@ -111,13 +118,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	resp := map[string]any{
 		"status":     "created",                               // "created" | "updated" | "failed"
-		"id":         sourceCodeRepositoryId,                  // upload id
+		"repository": sourceCodeRepositoryId,                  // Repository Id
+		"submission": subId,                                   // Submission Id
+		"revision":   0,                                       // number increases at each repository submission
 		"name":       "admin",                                 // repository id
 		"path":       path.Join(uploaded.Bucket, artifactKey), // submission path
 		"size":       artifactSize,                            // submission size (only attached file, body params doesn't count)
 		"format":     "application/zip",                       // compression algorithm ("tar.gz" || "zip") | "tar" also works, but it's not compressed
-		"revision":   0,                                       // number increases at each repository submission
-		"hash":       "a8728942f927248724ff4...",              // submission hash
+		"hash":       artifactHash,                            // submission hash
 		"created_at": subCreatedAt,                            // first submission received at
 		"updated_at": time.Now(),                              // latest submission received at
 	}
