@@ -91,6 +91,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			return &object, nil
 		},
 	)
+
 	if err != nil {
 		log.Printf("error uploading file to SeaweedFS: %v", err)
 		response.Fail(w, c.Errors.ErrorNameWhenUploadFails)
@@ -100,7 +101,13 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	uploaded, ok := data.(*bucket.Object)
 	if !ok || uploaded == nil {
 		log.Printf("unexpected upload result type: %T", data)
-		response.Fail(w, c.Errors.ErrorNameWhenUploadFails)
+		response.Fail(w, c.Errors.ErrorWhenUploadFails)
+		return
+	}
+
+	if artifactHash == "" {
+		log.Printf("no artifact hash found for source code repository")
+		response.Fail(w, c.Errors.ErrorWhenHashingFails)
 		return
 	}
 

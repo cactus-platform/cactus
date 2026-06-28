@@ -15,6 +15,8 @@ type Config struct {
 
 type Errors struct {
 	ErrorNameWhenUploadFails response.APIError `json:"error_name_when_upload_fails"`
+	ErrorWhenUploadFails     response.APIError `json:"error_when_upload_fails"`
+	ErrorWhenHashingFails    response.APIError `json:"error_when_hashing_fails"`
 }
 
 func Load() *Config {
@@ -30,6 +32,16 @@ func Load() *Config {
 				Status:  http.StatusBadRequest,
 				Code:    "INVALID_SOURCE_UPLOAD",
 				Message: fmt.Sprintf("Invalid source code upload, key=[%s] is undefined or invalid", SCUK),
+			},
+			ErrorWhenUploadFails: response.APIError{
+				Status:  http.StatusInternalServerError,
+				Code:    "INVALID_SOURCE_UPLOAD",
+				Message: "Error occurred during upload to Cactus Artifact Database",
+			},
+			ErrorWhenHashingFails: response.APIError{
+				Status:  http.StatusInternalServerError,
+				Code:    "INVALID_SOURCE_HASHING",
+				Message: "Invalid source code hashing, Error occurred during upload to Cactus Artifact Database",
 			},
 		},
 	}
