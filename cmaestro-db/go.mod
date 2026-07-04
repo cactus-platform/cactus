@@ -1,6 +1,6 @@
 module cmaestro-db
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.42.0
@@ -27,5 +27,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.43.3 // indirect
 	github.com/aws/smithy-go v1.27.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
+	golang.org/x/text v0.38.0 // indirect
+	gorm.io/gorm v1.31.2 // indirect
 )
