@@ -5,14 +5,14 @@ import (
 	"cmaestro-api/internal/config/platform.cmaestro/repositories"
 )
 
-type Config struct {
+type StaticConfig struct {
 	Repositories *repositories.Config
-	_Components  *platform_cmaestro_components.Config
+	Components   *platform_cmaestro_components.Config
 }
 
-func Load() *Config {
-	return &Config{
+func Load() *StaticConfig {
+	return &StaticConfig{
 		Repositories: repositories.Load(),
-		_Components:  platform_cmaestro_components.Load(),
+		Components:   platform_cmaestro_components.Load(),
 	}
 }

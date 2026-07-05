@@ -7,10 +7,10 @@ import (
 )
 
 type Handler struct {
-	App *config.AppContext
+	App *config.App
 }
 
-func NewHandler(app *config.AppContext) *Handler {
+func NewHandler(app *config.App) *Handler {
 	return &Handler{
 		App: app,
 	}
