@@ -18,10 +18,10 @@ import (
 )
 
 type Handler struct {
-	App *config.AppContext
+	App *config.App
 }
 
-func NewHandler(app *config.AppContext) *Handler {
+func NewHandler(app *config.App) *Handler {
 	return &Handler{
 		App: app,
 	}
@@ -52,7 +52,7 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := h.App.Config.Repositories
+	c := h.App.StaticConfig.Repositories
 
 	var sourceCodeRepositoryId string
 	if id := r.FormValue(c.SourceCodeIdKey); id != "" {
@@ -74,7 +74,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 			// Hash
 
-			object, err := h.App.ArtifactDB.UploadZip(
+			object, err := h.App.ArtifactStore.UploadZip(
 				r.Context(),
 				file,
 				header.Size,

@@ -24,7 +24,7 @@ Infrastructure Requirements
 func main() {
 	//app := config.Load()
 	ctx := context.Background()
-	app, err := config.NewAppContext(ctx)
+	app, err := config.NewFromEnv(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -4,7 +4,7 @@ metadata:
   name: seaweedfs
   namespace: cmaestro-db
 spec:
-  serviceName: seaweedfs
+  serviceName: seaweedfs-headless
   replicas: 1
   selector:
     matchLabels:

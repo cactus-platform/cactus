@@ -6,7 +6,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-func RegisterRoutes(r chi.Router, app *config.AppContext) {
+func RegisterRoutes(r chi.Router, app *config.App) {
 	h := NewHandler(app)
 
 	r.Get("/", h.List)

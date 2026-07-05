@@ -9,7 +9,7 @@ import (
 )
 
 // RegisterRoutes registers v1 routes onto the provided router.
-func RegisterRoutes(r chi.Router, app *config.AppContext) {
+func RegisterRoutes(r chi.Router, app *config.App) {
 	r.Route("/users", func(r chi.Router) {
 		users.RegisterRoutes(r, app)
 	})
