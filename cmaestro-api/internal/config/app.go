@@ -50,6 +50,8 @@ func NewAppContext(ctx context.Context) (*AppContext, error) {
 		return nil, fmt.Errorf("initialize SeaweedFS storage: %w", err)
 	}
 
+	// Creates Postgres Connection
+	
 	return &AppContext{
 		Context:    ctx,
 		Config:     cfg,

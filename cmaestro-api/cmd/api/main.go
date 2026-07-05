@@ -24,11 +24,11 @@ Infrastructure Requirements
 func main() {
 	//app := config.Load()
 	ctx := context.Background()
-	appv2, err := config.NewAppContext(ctx)
+	app, err := config.NewAppContext(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
-	r := httptransport.NewRouter(appv2)
+	r := httptransport.NewRouter(app)
 
 	// **************************************** SERVICES ****************************************
 	// system
