@@ -5,6 +5,7 @@ type Config struct {
 	EndpointEnvironmentVariable string
 	UsernameEnvironmentVariable string
 	PasswordEnvironmentVariable string
+	PortEnvironmentVariable     string
 }
 
 func Load() *Config {
@@ -13,5 +14,6 @@ func Load() *Config {
 		EndpointEnvironmentVariable: "CMAESTRO_SQL_ENDPOINT",
 		UsernameEnvironmentVariable: "CMAESTRO_SQL_USER",
 		PasswordEnvironmentVariable: "CMAESTRO_SQL_PASSWD",
+		PortEnvironmentVariable:     "CMAESTRO_SQL_PORT",
 	}
 }

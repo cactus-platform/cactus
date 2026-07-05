@@ -2,8 +2,9 @@ package sql
 
 import (
 	"fmt"
+	"net/url"
 
-	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
@@ -20,6 +21,7 @@ type Config struct {
 	Username string
 	Password string
 	Database string
+	Port     int
 	/*
 		HARD CODED VALUES INSIDE DB CONNECTION
 		Charset   string (utf-8)
@@ -33,17 +35,12 @@ type Client struct {
 }
 
 func New(cfg Config) (*Client, error) {
-	db, err := gorm.Open(mysql.New(mysql.Config{
-		DSN: fmt.Sprintf("%s:%s@tcp(%s)/gorm?charset=utf8&parseTime=True&loc=Local",
-			cfg.Username,
-			cfg.Password,
-			cfg.Endpoint),
-		DefaultStringSize:         defaultStringSize,             // default size for string fields
-		DisableDatetimePrecision:  !defaultDateTimePrecision,     // disable datetime precision, which not supported before MySQL 5.6
-		DontSupportRenameIndex:    !defaultSupportRenameIndex,    // drop & create when rename index, rename index not supported before MySQL 5.7, MariaDB
-		DontSupportRenameColumn:   !defaultSupportRenameColumn,   // `change` when rename column, rename column not supported before MySQL 8, MariaDB
-		SkipInitializeWithVersion: !defaultInitializeWithVersion, // auto configure based on currently MySQL version
-	}), &gorm.Config{})
+	credentials := url.UserPassword(cfg.Username, cfg.Password)
+	password, _ := credentials.Password()
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%v sslmode=disable TimeZone=Europe/Paris",
+		cfg.Endpoint, credentials.Username(), password, cfg.Database, cfg.Port)
+
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 
 	if err != nil {
 		return nil, err

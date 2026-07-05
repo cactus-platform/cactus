@@ -69,6 +69,7 @@ func New(ctx context.Context, cfg RuntimeConfig) (*App, error) {
 	app.addCloser("SQL Database", sqlClient)
 
 	success = true
+	log.Println("Application created!")
 	return app, nil
 }
 
@@ -100,6 +101,8 @@ func initSQL(cfg SQLRuntimeConfig) (*sql.Client, error) {
 		Endpoint: cfg.Endpoint,
 		Username: cfg.Username,
 		Password: cfg.Password,
+		Database: cfg.Database,
+		Port:     cfg.Port,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create SQL client: %w", err)

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -24,6 +25,8 @@ type SQLRuntimeConfig struct {
 	Endpoint string
 	Username string
 	Password string
+	Database string
+	Port     int
 }
 
 // ResolveRuntime turns environment-variable names from Config into actual values.
@@ -65,6 +68,15 @@ func (c *StaticConfig) ResolveRuntime() (RuntimeConfig, error) {
 		return RuntimeConfig{}, err
 	}
 
+	sqlPort, err := requiredEnv(sqlComponent.PortEnvironmentVariable)
+	if err != nil {
+		return RuntimeConfig{}, err
+	}
+	sqlPortInt, err := strconv.Atoi(sqlPort)
+	if err != nil {
+		return RuntimeConfig{}, err
+	}
+
 	return RuntimeConfig{
 		Artifact: ArtifactRuntimeConfig{
 			Endpoint:   artifactEndpoint,
@@ -77,6 +89,8 @@ func (c *StaticConfig) ResolveRuntime() (RuntimeConfig, error) {
 			Endpoint: sqlEndpoint,
 			Username: sqlUsername,
 			Password: sqlPassword,
+			Database: sqlComponent.DatabaseName,
+			Port:     sqlPortInt,
 		},
 	}, nil
 }

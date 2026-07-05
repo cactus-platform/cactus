@@ -3,27 +3,30 @@ kind: Service
 metadata:
   name: postgres-headless
   namespace: cmaestro-db
+  labels:
+    app.kubernetes.io/name: postgres
 spec:
   clusterIP: None
   publishNotReadyAddresses: true
   selector:
-    app: postgres
+    app.kubernetes.io/name: postgres
   ports:
-    - name: postgres
+    - name: postgres-db
       port: 5432
-      targetPort: db
+      targetPort: postgres-db
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: postgres
   namespace: cmaestro-db
+  labels:
+    app.kubernetes.io/name: postgres
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
-    app: postgres
+    app.kubernetes.io/name: postgres
   ports:
-    - name: postgres
+    - name: postgres-db
       port: 5432
-      targetPort: db
-      nodePort: 30543
+      targetPort: postgres-db
