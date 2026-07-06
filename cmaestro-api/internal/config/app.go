@@ -20,27 +20,28 @@ type App struct {
 }
 
 func NewFromEnv(ctx context.Context) (*App, error) {
-	rawConfig := Load()
+	staticConfig := Load()
 
-	runtimeConfig, err := rawConfig.ResolveRuntime()
+	runtimeConfig, err := staticConfig.ResolveRuntime()
 	if err != nil {
 		return nil, fmt.Errorf("resolve configuration: %w", err)
 	}
 
-	return New(ctx, runtimeConfig)
+	return New(ctx, staticConfig, runtimeConfig)
 }
 
 // New creates all application dependencies.
 // It uses a local app variable rather than a named return value so deferred
 // cleanup never attempts to call Close on nil.
-func New(ctx context.Context, cfg RuntimeConfig) (*App, error) {
+func New(ctx context.Context, staticCfg *StaticConfig, runtimCfg RuntimeConfig) (*App, error) {
 	log.Println("initializing application")
 	if ctx == nil {
 		return nil, errors.New("context cannot be nil")
 	}
 
 	app := &App{
-		RuntimeConfig: cfg,
+		StaticConfig:  *staticCfg,
+		RuntimeConfig: runtimCfg,
 	}
 
 	success := false
@@ -51,7 +52,7 @@ func New(ctx context.Context, cfg RuntimeConfig) (*App, error) {
 	}()
 
 	log.Println("creating [ArtifactStore] connection...")
-	artifactStore, err := initArtifactStore(ctx, cfg.Artifact)
+	artifactStore, err := initArtifactStore(ctx, runtimCfg.Artifact)
 	if err != nil {
 		return nil, err
 	}
@@ -60,7 +61,7 @@ func New(ctx context.Context, cfg RuntimeConfig) (*App, error) {
 	app.addCloser("ArtifactStore", artifactStore)
 
 	log.Println("creating [SQL] connection...")
-	sqlClient, err := initSQL(cfg.SQL)
+	sqlClient, err := initSQL(runtimCfg.SQL)
 	if err != nil {
 		return nil, err
 	}
