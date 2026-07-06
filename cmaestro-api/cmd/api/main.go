@@ -2,7 +2,7 @@ package main
 
 import (
 	httptransport "cmaestro-api/internal/api/transport/http"
-	"cmaestro-api/internal/config"
+	"cmaestro-api/internal/bootstrap"
 	cmaestro_db "cmaestro-db/keyval"
 	cregistry "cmastero-registry"
 	"context"
@@ -24,7 +24,7 @@ Infrastructure Requirements
 func main() {
 	//app := config.Load()
 	ctx := context.Background()
-	app, err := config.NewFromEnv(ctx)
+	app, err := bootstrap.NewFromEnv(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}

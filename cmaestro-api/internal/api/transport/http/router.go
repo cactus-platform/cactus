@@ -2,7 +2,7 @@ package httptransport
 
 import (
 	"cmaestro-api/internal/api/transport/http/response"
-	"cmaestro-api/internal/config"
+	"cmaestro-api/internal/bootstrap"
 	"net/http"
 
 	v1 "cmaestro-api/internal/api/v1"
@@ -12,7 +12,7 @@ import (
 )
 
 // NewRouter creates a chi router, applies common middleware and registers API routes.
-func NewRouter(app *config.App) *chi.Mux {
+func NewRouter(app *bootstrap.App) *chi.Mux {
 	r := chi.NewRouter()
 
 	// common middleware

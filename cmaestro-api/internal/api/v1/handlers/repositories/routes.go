@@ -3,7 +3,7 @@ package repositories
 import (
 	"cmaestro-api/internal/api/transport/http/request"
 	"cmaestro-api/internal/api/transport/http/response"
-	"cmaestro-api/internal/config"
+	"cmaestro-api/internal/bootstrap"
 	"cmaestro-db/bucket"
 	"cmaestro-db/dbutil"
 	"encoding/json"
@@ -18,10 +18,10 @@ import (
 )
 
 type Handler struct {
-	App *config.App
+	App *bootstrap.App
 }
 
-func NewHandler(app *config.App) *Handler {
+func NewHandler(app *bootstrap.App) *Handler {
 	return &Handler{
 		App: app,
 	}
@@ -74,7 +74,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 			// Hash
 
-			object, err := h.App.ArtifactStore.UploadZip(
+			object, err := h.App.Connections.ArtifactStore.UploadZip(
 				r.Context(),
 				file,
 				header.Size,

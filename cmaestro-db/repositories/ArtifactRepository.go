@@ -26,7 +26,7 @@ type ArtifactRepositoryImpl struct {
 	db *gorm.DB
 }
 
-func NewArtifactRepository(db *gorm.DB) ArtifactRepository {
+func New(db *gorm.DB) ArtifactRepository {
 	return &ArtifactRepositoryImpl{
 		db: db,
 	}

@@ -30,9 +30,9 @@ type SQLRuntimeConfig struct {
 }
 
 // ResolveRuntime turns environment-variable names from Config into actual values.
-func (c *StaticConfig) ResolveRuntime() (RuntimeConfig, error) {
+func (c *StaticConfig) ResolveRuntime() (*RuntimeConfig, error) {
 	if c == nil {
-		return RuntimeConfig{}, errors.New("config is nil")
+		return nil, errors.New("config is nil")
 	}
 
 	artifact := c.Components.Artifact
@@ -40,44 +40,44 @@ func (c *StaticConfig) ResolveRuntime() (RuntimeConfig, error) {
 
 	artifactEndpoint, err := requiredEnv(artifact.EndpointEnvironmentVariable)
 	if err != nil {
-		return RuntimeConfig{}, err
+		return nil, err
 	}
 
 	artifactAccessKey, err := requiredEnv(artifact.AccessKeyEnvironmentVariable)
 	if err != nil {
-		return RuntimeConfig{}, err
+		return nil, err
 	}
 
 	artifactSecretKey, err := requiredEnv(artifact.SecretKeyEnvironmentVariable)
 	if err != nil {
-		return RuntimeConfig{}, err
+		return nil, err
 	}
 
 	sqlEndpoint, err := requiredEnv(sqlComponent.EndpointEnvironmentVariable)
 	if err != nil {
-		return RuntimeConfig{}, err
+		return nil, err
 	}
 
 	sqlUsername, err := requiredEnv(sqlComponent.UsernameEnvironmentVariable)
 	if err != nil {
-		return RuntimeConfig{}, err
+		return nil, err
 	}
 
 	sqlPassword, err := requiredEnv(sqlComponent.PasswordEnvironmentVariable)
 	if err != nil {
-		return RuntimeConfig{}, err
+		return nil, err
 	}
 
 	sqlPort, err := requiredEnv(sqlComponent.PortEnvironmentVariable)
 	if err != nil {
-		return RuntimeConfig{}, err
+		return nil, err
 	}
 	sqlPortInt, err := strconv.Atoi(sqlPort)
 	if err != nil {
-		return RuntimeConfig{}, err
+		return nil, err
 	}
 
-	return RuntimeConfig{
+	return &RuntimeConfig{
 		Artifact: ArtifactRuntimeConfig{
 			Endpoint:   artifactEndpoint,
 			AccessKey:  artifactAccessKey,

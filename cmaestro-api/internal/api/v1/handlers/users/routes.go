@@ -1,16 +1,16 @@
 package users
 
 import (
-	"cmaestro-api/internal/config"
+	"cmaestro-api/internal/bootstrap"
 	"encoding/json"
 	"net/http"
 )
 
 type Handler struct {
-	App *config.App
+	App *bootstrap.App
 }
 
-func NewHandler(app *config.App) *Handler {
+func NewHandler(app *bootstrap.App) *Handler {
 	return &Handler{
 		App: app,
 	}
