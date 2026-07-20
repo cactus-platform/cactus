@@ -32,5 +32,5 @@ jobs:
       - name: Upload Cmaestro-API as an artifact  
         uses: actions/upload-artifact@v4
         with:
-          name: $BIN_NAME
-          path: $BIN_FOLDER
+          name: ${{ env.BIN_NAME }}
+          path: ${{ env.IN_FOLDER }}
