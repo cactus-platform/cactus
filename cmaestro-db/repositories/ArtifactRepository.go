@@ -1,6 +1,7 @@
 package repositories
 
 import (
+	"cmaestro-db/sql"
 	"context"
 	"errors"
 
@@ -23,12 +24,12 @@ type ArtifactRepository interface {
 }
 
 type ArtifactRepositoryImpl struct {
-	db *gorm.DB
+	db *sql.Client
 }
 
-func New(db *gorm.DB) ArtifactRepository {
+func NewArtifactRepository(sqlDb *sql.Client) ArtifactRepository {
 	return &ArtifactRepositoryImpl{
-		db: db,
+		db: sqlDb,
 	}
 }
 

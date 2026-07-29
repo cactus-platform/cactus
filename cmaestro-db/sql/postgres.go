@@ -31,7 +31,7 @@ type Config struct {
 }
 
 type Client struct {
-	dbConn *gorm.DB
+	*gorm.DB
 }
 
 func New(cfg Config) (*Client, error) {
@@ -47,6 +47,6 @@ func New(cfg Config) (*Client, error) {
 	}
 
 	return &Client{
-		dbConn: db,
+		DB: db,
 	}, nil
 }

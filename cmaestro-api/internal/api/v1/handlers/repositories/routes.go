@@ -6,6 +6,7 @@ import (
 	"cmaestro-api/internal/bootstrap"
 	"cmaestro-db/bucket"
 	"cmaestro-db/dbutil"
+	"cmaestro-db/models"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -27,116 +28,196 @@ func NewHandler(app *bootstrap.App) *Handler {
 	}
 }
 
-/*
-func NewHandler(
-	userService *service.UserService,
-	logger *slog.Logger,
-) *Handler {
-	return &Handler{
-		service: userService,
-		logger:  logger,
-	}
-}
-*/
-
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
-	users := []string{"cactus-plane"}
-
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(users); err != nil {
-		http.Error(w, "internal error", http.StatusInternalServerError)
+	data := []string{
+		"cactus-plane",
+	}
+
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		http.Error(
+			w,
+			"internal error",
+			http.StatusInternalServerError,
+		)
 		return
 	}
 }
 
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	c := h.App.StaticConfig.Repositories
 
-	var sourceCodeRepositoryId string
-	if id := r.FormValue(c.SourceCodeIdKey); id != "" {
-		sourceCodeRepositoryId = id
-	} else {
-		sourceCodeRepositoryId = uuid.New().String()
+	cfg := h.App.StaticConfig.Repositories
+
+	var artifact models.Artifact
+
+	artifactJSON := r.FormValue(
+		cfg.ArtifactMetadataFieldName,
+	)
+
+	if artifactJSON == "" {
+		response.Fail(
+			w,
+			response.APIError{
+				Status:  http.StatusBadRequest,
+				Code:    "missing_artifact",
+				Message: "Missing artifact metadata",
+			},
+		)
+		return
 	}
 
-	subId := uuid.New().String()
-	subCreatedAt := time.Now()
-	var artifactHash string
+	if err := json.Unmarshal(
+		[]byte(artifactJSON),
+		&artifact,
+	); err != nil {
+
+		log.Printf(
+			"invalid artifact JSON: %v",
+			err,
+		)
+
+		response.Fail(
+			w,
+			response.APIError{
+				Status:  http.StatusBadRequest,
+				Code:    "invalid_artifact",
+				Message: "Invalid artifact metadata",
+			},
+		)
+
+		return
+	}
+
+	if artifact.Id == uuid.Nil {
+		artifact.Id = uuid.New()
+	}
+
+	now := time.Now()
+
+	artifact.CreatedAt = now
+	artifact.UpdatedAt = now
 
 	data, err := request.WithMultipartFile(
 		r,
-		c.SourceCodeUploadKey,
-		c.MaxUploadSize,
-		func(file multipart.File, header *multipart.FileHeader) (any, error) {
+		cfg.FileFieldName,
+		cfg.MaxUploadSize,
+		func(
+			file multipart.File,
+			header *multipart.FileHeader,
+		) (any, error) {
+
 			defer file.Close()
 
-			// Hash
+			key := fmt.Sprintf(
+				"uploads/repositories/%s/%s.zip",
+				artifact.Id,
+				uuid.New(),
+			)
 
 			object, err := h.App.Connections.ArtifactStore.UploadZip(
 				r.Context(),
 				file,
 				header.Size,
-				fmt.Sprintf("uploads/repositories/%s/%s.zip", sourceCodeRepositoryId, subId),
+				key,
 			)
+
 			if err != nil {
-				return nil, fmt.Errorf("upload ZIP to SeaweedFS: %w", err)
+				return nil, fmt.Errorf(
+					"upload ZIP to artifact store: %w",
+					err,
+				)
 			}
 
-			log.Printf("uploaded %s (%d bytes)", object.Key, object.Size)
+			log.Printf(
+				"uploaded %s (%d bytes)",
+				object.Key,
+				object.Size,
+			)
 
-			artifactHash = dbutil.NewHasherReader(file).Hash()
+			artifact.Hash = dbutil.NewHasherReader(file).Hash()
+
+			artifact.Path = path.Join(
+				object.Bucket,
+				object.Key,
+			)
+
+			artifact.Size = object.Size
+			artifact.Format = "application/zip"
+			artifact.Status = "uploaded"
 
 			return &object, nil
 		},
 	)
 
 	if err != nil {
-		log.Printf("error uploading file to SeaweedFS: %v", err)
-		response.Fail(w, c.Errors.ErrorNameWhenUploadFails)
+		log.Printf(
+			"upload failed: %v",
+			err,
+		)
+
+		response.Fail(
+			w,
+			cfg.Errors.ErrorNameWhenUploadFails,
+		)
+
 		return
 	}
 
-	uploaded, ok := data.(*bucket.Object)
-	if !ok || uploaded == nil {
-		log.Printf("unexpected upload result type: %T", data)
-		response.Fail(w, c.Errors.ErrorWhenUploadFails)
+	uploadedObject, ok := data.(*bucket.Object)
+
+	if !ok || uploadedObject == nil {
+
+		log.Printf(
+			"unexpected upload result type: %T",
+			data,
+		)
+
+		response.Fail(
+			w,
+			cfg.Errors.ErrorWhenUploadFails,
+		)
+
 		return
 	}
 
-	if artifactHash == "" {
-		log.Printf("no artifact hash found for source code repository")
-		response.Fail(w, c.Errors.ErrorWhenHashingFails)
+	if err := h.App.Services.Artifact.CreateOrUpdateArtifact(
+		r.Context(),
+		&artifact,
+	); err != nil {
+
+		log.Printf(
+			"artifact persistence failed: %v",
+			err,
+		)
+
+		response.Fail(
+			w,
+			response.APIError{
+				Status:  http.StatusInternalServerError,
+				Code:    "internal_server_error",
+				Message: err.Error(),
+			},
+		)
+
 		return
 	}
 
-	// Use it here.
-	log.Printf(
-		"repository source uploaded: bucket=%s key=%s size=%d etag=%s",
-		uploaded.Bucket,
-		uploaded.Key,
-		uploaded.Size,
-		uploaded.ETag,
+	response.Created(
+		w,
+		map[string]any{
+			"status":     "created",
+			"id":         artifact.Id,
+			"name":       artifact.Name,
+			"path":       artifact.Path,
+			"revision":   artifact.Revision,
+			"hash":       artifact.Hash,
+			"size":       artifact.Size,
+			"format":     artifact.Format,
+			"created_at": artifact.CreatedAt,
+			"updated_at": artifact.UpdatedAt,
+			"object":     uploadedObject,
+		},
 	)
-
-	artifactKey := uploaded.Key
-	artifactSize := uploaded.Size
-
-	resp := map[string]any{
-		"status":     "created",                               // "created" | "updated" | "failed"
-		"repository": sourceCodeRepositoryId,                  // Repository Id
-		"submission": subId,                                   // Submission Id
-		"revision":   0,                                       // number increases at each repository submission
-		"name":       "admin",                                 // repository id
-		"path":       path.Join(uploaded.Bucket, artifactKey), // submission path
-		"size":       artifactSize,                            // submission size (only attached file, body params doesn't count)
-		"format":     "application/zip",                       // compression algorithm ("tar.gz" || "zip") | "tar" also works, but it's not compressed
-		"hash":       artifactHash,                            // submission hash
-		"created_at": subCreatedAt,                            // first submission received at
-		"updated_at": time.Now(),                              // latest submission received at
-	}
-
-	response.Created(w, resp)
-	//json.NewEncoder(w).Encode(resp)
 }
