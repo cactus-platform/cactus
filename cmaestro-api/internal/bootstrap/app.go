@@ -56,10 +56,25 @@ func New(ctx context.Context, staticCfg *config.StaticConfig, runtimeCfg *config
 	if err != nil {
 		return nil, fmt.Errorf("create collections: %w", err)
 	}
+	log.Printf("Collections: ok")
 	app.Connections = conn
 
+	repos, err := collection.NewRepositories(ctx, runtimeCfg, app.Connections)
+	if err != nil {
+		return nil, fmt.Errorf("create repositories: %w", err)
+	}
+	log.Printf("Repositories: ok")
+	app.Repositories = repos
+
+	svcs, err := collection.NewServices(ctx, runtimeCfg, app.Connections, app.Repositories)
+	if err != nil {
+		return nil, fmt.Errorf("create services: %w", err)
+	}
+	log.Printf("Services: ok")
+	app.Services = svcs
+
 	success = true
-	log.Println("Application created!")
+	log.Printf("Application created!")
 	return app, nil
 }
 
