@@ -3,6 +3,7 @@ package collection
 import (
 	"cmaestro-api/internal/config"
 	"cmaestro-db/bucket"
+	"cmaestro-db/models"
 	"cmaestro-db/sql"
 	"context"
 	"errors"
@@ -82,6 +83,13 @@ func initSQL(cfg config.SQLRuntimeConfig) (*sql.Client, error) {
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create SQL client: %w", err)
+	}
+
+	err = client.AutoMigrate(
+		&models.Artifact{},
+	)
+	if err != nil {
+		return nil, err
 	}
 
 	return client, nil
