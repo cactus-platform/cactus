@@ -8,11 +8,13 @@ import (
 	"cmaestro-db/dbutil"
 	"cmaestro-db/models"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"mime/multipart"
 	"net/http"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -50,31 +52,26 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	cfg := h.App.StaticConfig.Repositories
 
-	var artifact models.Artifact
-
-	artifactJSON := r.FormValue(
-		cfg.ArtifactMetadataFieldName,
+	artifact, err := loadArtifactFromRequest(
+		r,
+		cfg.RepositoryNameFieldName,
+		cfg.RepositoryIDFieldName,
 	)
-
-	if artifactJSON == "" {
-		response.Fail(
-			w,
-			response.APIError{
-				Status:  http.StatusBadRequest,
-				Code:    "missing_artifact",
-				Message: "Missing artifact metadata",
-			},
-		)
-		return
-	}
-
-	if err := json.Unmarshal(
-		[]byte(artifactJSON),
-		&artifact,
-	); err != nil {
+	if err != nil {
+		if errors.Is(err, errMissingArtifactMetadata) {
+			response.Fail(
+				w,
+				response.APIError{
+					Status:  http.StatusBadRequest,
+					Code:    "missing_artifact",
+					Message: "Missing artifact metadata",
+				},
+			)
+			return
+		}
 
 		log.Printf(
-			"invalid artifact JSON: %v",
+			"invalid artifact metadata: %v",
 			err,
 		)
 
@@ -110,15 +107,18 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 			defer file.Close()
 
+			hasher := dbutil.NewHasherReader(file)
+			revision := uuid.NewString()
+
 			key := fmt.Sprintf(
 				"uploads/repositories/%s/%s.zip",
 				artifact.Id,
-				uuid.New(),
+				revision,
 			)
 
 			object, err := h.App.Connections.ArtifactStore.UploadZip(
 				r.Context(),
-				file,
+				hasher,
 				header.Size,
 				key,
 			)
@@ -136,7 +136,8 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 				object.Size,
 			)
 
-			artifact.Hash = dbutil.NewHasherReader(file).Hash()
+			artifact.Hash = hasher.Hash()
+			artifact.Revision = revision
 
 			artifact.Path = path.Join(
 				object.Bucket,
@@ -220,4 +221,31 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			"object":     uploadedObject,
 		},
 	)
+}
+
+var errMissingArtifactMetadata = errors.New("missing artifact metadata")
+
+func loadArtifactFromRequest(
+	r *http.Request,
+	repositoryNameFieldName string,
+	repositoryIDFieldName string,
+) (models.Artifact, error) {
+	artifact := models.Artifact{
+		Name: strings.TrimSpace(r.FormValue(repositoryNameFieldName)),
+	}
+
+	if artifact.Name == "" {
+		return models.Artifact{}, errMissingArtifactMetadata
+	}
+
+	if idValue := strings.TrimSpace(r.FormValue(repositoryIDFieldName)); idValue != "" {
+		artifactID, err := uuid.Parse(idValue)
+		if err != nil {
+			return models.Artifact{}, fmt.Errorf("invalid repository id: %w", err)
+		}
+
+		artifact.Id = artifactID
+	}
+
+	return artifact, nil
 }

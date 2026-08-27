@@ -10,8 +10,8 @@ type Config struct {
 	// Multipart field containing the uploaded artifact file
 	FileFieldName string `json:"fileFieldName"`
 
-	// Multipart field containing the Artifact JSON metadata
-	ArtifactMetadataFieldName string `json:"artifactMetadataFieldName"`
+	// Multipart field containing the repository name metadata
+	RepositoryNameFieldName string `json:"repositoryNameFieldName"`
 
 	// Multipart field containing an optional existing repository ID
 	RepositoryIDFieldName string `json:"repositoryIDFieldName"`
@@ -30,13 +30,13 @@ type Errors struct {
 func Load() *Config {
 	fileField := "platform.cactus.repository.source"
 	repositoryIDField := "platform.cactus.repository.id"
-	artifactMetadataField := "artifact"
+	repositoryNameField := "platform.cactus.repository.name"
 
 	return &Config{
-		FileFieldName:             fileField,
-		ArtifactMetadataFieldName: artifactMetadataField,
-		RepositoryIDFieldName:     repositoryIDField,
-		MaxUploadSize:             10 << 20,
+		FileFieldName:           fileField,
+		RepositoryNameFieldName: repositoryNameField,
+		RepositoryIDFieldName:   repositoryIDField,
+		MaxUploadSize:           10 << 20,
 
 		Errors: &Errors{
 			ErrorNameWhenUploadFails: response.APIError{
