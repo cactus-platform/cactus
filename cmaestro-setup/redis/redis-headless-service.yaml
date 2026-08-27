@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-headless
+  namespace: cmaestro-db
+  labels:
+    app.kubernetes.io/name: redis
+spec:
+  clusterIP: None
+  publishNotReadyAddresses: true
+  selector:
+    app.kubernetes.io/name: redis
+  ports:
+    - name: db
+      port: 6379
+      targetPort: 6379

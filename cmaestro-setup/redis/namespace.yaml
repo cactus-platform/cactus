@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cmaestro-db
+  labels:
+    cmaestro/metadata.name: cmaestro-db
+    cmaestro/metadata.kind: system
+    cmaestro/metadata.system.name: databases
+    cmaestro/metadata.priority: absolute
