@@ -5,6 +5,7 @@ import (
 	"cmaestro-api/internal/bootstrap"
 	"net/http"
 
+	"cmaestro-api/internal/api/transport/http/docs"
 	v1 "cmaestro-api/internal/api/v1"
 
 	"github.com/go-chi/chi/v5"
@@ -20,6 +21,10 @@ func NewRouter(app *bootstrap.App) *chi.Mux {
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	// API docs
+	r.Get("/openapi.json", docs.JSON)
+	r.Get("/docs", docs.UI)
 
 	// versioned API registration
 	r.Route("/api", func(sr chi.Router) {
