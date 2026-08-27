@@ -9,12 +9,12 @@ import (
 )
 
 // RegisterRoutes registers v1 routes onto the provided router.
-func RegisterRoutes(r chi.Router, app *bootstrap.App) {
+func RegisterRoutes(r chi.Router, app *bootstrap.App, basePath string) {
 	r.Route("/users", func(r chi.Router) {
-		users.RegisterRoutes(r, app)
+		users.RegisterRoutes(r, app, basePath+"/users")
 	})
 
 	r.Route("/repositories", func(r chi.Router) {
-		repositories.RegisterRoutes(r, app)
+		repositories.RegisterRoutes(r, app, basePath+"/repositories")
 	})
 }

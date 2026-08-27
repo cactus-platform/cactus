@@ -23,13 +23,13 @@ func NewRouter(app *bootstrap.App) *chi.Mux {
 	r.Use(middleware.Recoverer)
 
 	// API docs
-	r.Get("/openapi.json", docs.JSON)
+	r.Get("/openapi.json", docs.JSON(r))
 	r.Get("/docs", docs.UI)
 
 	// versioned API registration
 	r.Route("/api", func(sr chi.Router) {
 		sr.Route("/v1", func(rchi chi.Router) {
-			v1.RegisterRoutes(rchi, app)
+			v1.RegisterRoutes(rchi, app, "/api/v1")
 		})
 	})
 

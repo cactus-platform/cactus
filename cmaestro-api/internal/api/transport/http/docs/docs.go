@@ -2,14 +2,21 @@ package docs
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"regexp"
+	"sort"
+	"strings"
+	"sync"
+
+	"github.com/go-chi/chi/v5"
 )
 
 type document struct {
-	OpenAPI string          `json:"openapi"`
-	Info    info            `json:"info"`
-	Servers []server        `json:"servers"`
-	Paths   map[string]path `json:"paths"`
+	OpenAPI string                           `json:"openapi"`
+	Info    info                             `json:"info"`
+	Servers []server                         `json:"servers"`
+	Paths   map[string]map[string]*operation `json:"paths"`
 }
 
 type info struct {
@@ -20,11 +27,6 @@ type info struct {
 
 type server struct {
 	URL string `json:"url"`
-}
-
-type path struct {
-	Get  *operation `json:"get,omitempty"`
-	Post *operation `json:"post,omitempty"`
 }
 
 type operation struct {
@@ -63,7 +65,110 @@ type schema struct {
 	Required   []string          `json:"required,omitempty"`
 }
 
-func buildDocument() document {
+type RouteMeta struct {
+	Summary     string
+	RequestBody *RequestBody
+	Responses   map[string]Response
+}
+
+type RequestBody struct {
+	Required bool               `json:"required"`
+	Content  map[string]Content `json:"content"`
+}
+
+type Content struct {
+	Schema Schema `json:"schema"`
+}
+
+type Response struct {
+	Description string             `json:"description"`
+	Content     map[string]Content `json:"content,omitempty"`
+}
+
+type Schema struct {
+	Type       string            `json:"type,omitempty"`
+	Format     string            `json:"format,omitempty"`
+	Items      *Schema           `json:"items,omitempty"`
+	Properties map[string]Schema `json:"properties,omitempty"`
+	Required   []string          `json:"required,omitempty"`
+}
+
+var (
+	pathParamPattern = regexp.MustCompile(`\{([^}]+)\}`)
+	metaMu           sync.RWMutex
+	routeRegistry    = map[string]map[string]RouteMeta{}
+)
+
+// Register stores OpenAPI metadata for a method and route.
+func Register(method, route string, meta RouteMeta) {
+	method = strings.ToLower(method)
+	route = normalizeRoute(route)
+
+	metaMu.Lock()
+	defer metaMu.Unlock()
+
+	if _, ok := routeRegistry[route]; !ok {
+		routeRegistry[route] = map[string]RouteMeta{}
+	}
+	routeRegistry[route][method] = meta
+}
+
+func buildDocument(router chi.Routes) (document, error) {
+	paths := make(map[string]map[string]*operation)
+
+	metaMu.RLock()
+	registry := make(map[string]map[string]RouteMeta, len(routeRegistry))
+	for route, methods := range routeRegistry {
+		registry[route] = make(map[string]RouteMeta, len(methods))
+		for method, meta := range methods {
+			registry[route][method] = meta
+		}
+	}
+	metaMu.RUnlock()
+
+	err := chi.Walk(router, func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
+		_ = handler
+		_ = middlewares
+
+		normalizedRoute := normalizeRoute(route)
+		specByMethod, ok := registry[normalizedRoute]
+		if !ok {
+			return nil
+		}
+
+		methodMeta, ok := specByMethod[strings.ToLower(method)]
+		if !ok {
+			return nil
+		}
+
+		if _, exists := paths[normalizedRoute]; !exists {
+			paths[normalizedRoute] = make(map[string]*operation)
+		}
+
+		paths[normalizedRoute][strings.ToLower(method)] = &operation{
+			Summary:     methodMeta.Summary,
+			Parameters:  pathParameters(normalizedRoute),
+			RequestBody: convertRequestBody(methodMeta.RequestBody),
+			Responses:   convertResponses(methodMeta.Responses),
+		}
+
+		return nil
+	})
+	if err != nil {
+		return document{}, err
+	}
+
+	routes := make([]string, 0, len(paths))
+	for route := range paths {
+		routes = append(routes, route)
+	}
+	sort.Strings(routes)
+
+	resultPaths := make(map[string]map[string]*operation, len(paths))
+	for _, route := range routes {
+		resultPaths[route] = paths[route]
+	}
+
 	return document{
 		OpenAPI: "3.0.3",
 		Info: info{
@@ -72,87 +177,108 @@ func buildDocument() document {
 			Description: "OpenAPI specification for the Cmaestro API.",
 		},
 		Servers: []server{{URL: "/"}},
-		Paths: map[string]path{
-			"/healthz": {
-				Get: &operation{
-					Summary: "Health check",
-					Responses: map[string]response{
-						"200": {Description: "Service is healthy"},
-					},
-				},
-			},
-			"/api/v1/users": {
-				Get: &operation{
-					Summary: "List users",
-					Responses: map[string]response{
-						"200": {
-							Description: "List of users",
-							Content: map[string]content{
-								"application/json": {Schema: schema{Type: "array", Items: &schema{Type: "string"}}},
-							},
-						},
-					},
-				},
-			},
-			"/api/v1/users/{id}": {
-				Get: &operation{
-					Summary: "Get a user",
-					Parameters: []parameter{{
-						Name:     "id",
-						In:       "path",
-						Required: true,
-						Schema:   schema{Type: "string"},
-					}},
-					Responses: map[string]response{
-						"200": {Description: "User response"},
-					},
-				},
-			},
-			"/api/v1/repositories": {
-				Get: &operation{
-					Summary: "List repositories",
-					Responses: map[string]response{
-						"200": {
-							Description: "Repository names",
-							Content: map[string]content{
-								"application/json": {Schema: schema{Type: "array", Items: &schema{Type: "string"}}},
-							},
-						},
-					},
-				},
-				Post: &operation{
-					Summary: "Create a repository artifact upload",
-					RequestBody: &requestBody{
-						Required: true,
-						Content: map[string]content{
-							"multipart/form-data": {
-								Schema: schema{
-									Type:     "object",
-									Required: []string{"platform.cactus.repository.source", "platform.cactus.repository.name"},
-									Properties: map[string]schema{
-										"platform.cactus.repository.source": {Type: "string", Format: "binary"},
-										"platform.cactus.repository.name":   {Type: "string"},
-										"platform.cactus.repository.id":     {Type: "string"},
-									},
-								},
-							},
-						},
-					},
-					Responses: map[string]response{
-						"201": {Description: "Artifact created"},
-						"400": {Description: "Invalid request"},
-					},
-				},
-			},
-		},
+		Paths:   resultPaths,
+	}, nil
+}
+
+func normalizeRoute(route string) string {
+	if route == "/" {
+		return route
+	}
+
+	return strings.TrimSuffix(route, "/")
+}
+
+func pathParameters(route string) []parameter {
+	matches := pathParamPattern.FindAllStringSubmatch(route, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	parameters := make([]parameter, 0, len(matches))
+	seen := make(map[string]struct{}, len(matches))
+	for _, match := range matches {
+		name := match[1]
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		parameters = append(parameters, parameter{
+			Name:     name,
+			In:       "path",
+			Required: true,
+			Schema:   schema{Type: "string"},
+		})
+	}
+
+	return parameters
+}
+
+func convertRequestBody(body *RequestBody) *requestBody {
+	if body == nil {
+		return nil
+	}
+
+	convertedContent := make(map[string]content, len(body.Content))
+	for mimeType, item := range body.Content {
+		convertedContent[mimeType] = content{Schema: convertSchema(item.Schema)}
+	}
+
+	return &requestBody{Required: body.Required, Content: convertedContent}
+}
+
+func convertResponses(responses map[string]Response) map[string]response {
+	if responses == nil {
+		return nil
+	}
+
+	converted := make(map[string]response, len(responses))
+	for code, item := range responses {
+		responseContent := make(map[string]content, len(item.Content))
+		for mimeType, contentItem := range item.Content {
+			responseContent[mimeType] = content{Schema: convertSchema(contentItem.Schema)}
+		}
+		converted[code] = response{Description: item.Description, Content: responseContent}
+	}
+
+	return converted
+}
+
+func convertSchema(s Schema) schema {
+	properties := make(map[string]schema, len(s.Properties))
+	for key, item := range s.Properties {
+		properties[key] = convertSchema(item)
+	}
+
+	var items *schema
+	if s.Items != nil {
+		converted := convertSchema(*s.Items)
+		items = &converted
+	}
+
+	return schema{
+		Type:       s.Type,
+		Format:     s.Format,
+		Items:      items,
+		Properties: properties,
+		Required:   s.Required,
 	}
 }
 
 // JSON serves the OpenAPI document for the API.
-func JSON(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_ = json.NewEncoder(w).Encode(buildDocument())
+func JSON(router chi.Routes) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+
+		document, err := buildDocument(router)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to build openapi document: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(document)
+	}
 }
 
 // UI serves a minimal Swagger UI page backed by the local OpenAPI document.
