@@ -81,9 +81,21 @@ Scheduler workers consume those events and handle execution:
 4. Wait for the pod to finish.
 5. Return the output as the response body.
 
-## Intended outcome
+## Core Components
 
-The result is a function-to-cluster execution pipeline where source code is validated, packaged, scheduled, and served with minimal manual wiring.
+### Cactus
 
+This [Repository](https://github.com/cactus-platform/cactus)
 
-[text](cmaestro-api) [text](cmaestro-db) [text](cmaestro-encapsulate) [text](cmaestro-entrypoint) [text](cmaestro-ingest) [text](cmaestro-parser) [text](cmaestro-scheduler) [text](cmaestro-validation)
+### Cactus Core
+
+Core components [Repository](https://github.com/cactus-platform/cmaestro-core) contains shared libs:
+
+- Database Connections (/storage)
+- Database Helpers (/dbutil)
+- Models (/models)
+- Repositories (/repositories)
+
+### Cactus Scheduler
+
+Scheduler API [Repository](https://github.com/cactus-platform/cmaestro-scheduler)  
