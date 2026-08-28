@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"cmaestro-db/models"
-	"cmaestro-db/repositories"
+	"github.com/cactus-platform/cmaestro-core/models"
+	"github.com/cactus-platform/cmaestro-core/repositories"
 
 	"github.com/google/uuid"
 )

@@ -3,12 +3,13 @@ package main
 import (
 	httptransport "cmaestro-api/internal/api/transport/http"
 	"cmaestro-api/internal/bootstrap"
-	cmaestro_db "cmaestro-db/keyval"
 	cregistry "cmastero-registry"
 	"context"
 	"fmt"
 	"log"
 	"net/http"
+
+	cmaestro_db "github.com/cactus-platform/cmaestro-core/storage/keyval"
 )
 
 /*

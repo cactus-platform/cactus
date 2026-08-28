@@ -11,6 +11,7 @@ import (
 type RuntimeConfig struct {
 	Artifact ArtifactRuntimeConfig
 	SQL      SQLRuntimeConfig
+	KeyVal   KeyValRuntimeConfig
 }
 
 type ArtifactRuntimeConfig struct {
@@ -29,30 +30,39 @@ type SQLRuntimeConfig struct {
 	Port     int
 }
 
+type KeyValRuntimeConfig struct {
+	Endpoint string
+	Username string
+	Password string
+}
+
 // ResolveRuntime turns environment-variable names from Config into actual values.
 func (c *StaticConfig) ResolveRuntime() (*RuntimeConfig, error) {
 	if c == nil {
 		return nil, errors.New("config is nil")
 	}
 
-	artifact := c.Components.Artifact
+	artifactComponent := c.Components.Artifact
 	sqlComponent := c.Components.SQL
+	keyvalComponent := c.Components.KeyVal
 
-	artifactEndpoint, err := requiredEnv(artifact.EndpointEnvironmentVariable)
+	// Artifact Database Env Configuration
+	artifactEndpoint, err := requiredEnv(artifactComponent.EndpointEnvironmentVariable)
 	if err != nil {
 		return nil, err
 	}
 
-	artifactAccessKey, err := requiredEnv(artifact.AccessKeyEnvironmentVariable)
+	artifactAccessKey, err := requiredEnv(artifactComponent.AccessKeyEnvironmentVariable)
 	if err != nil {
 		return nil, err
 	}
 
-	artifactSecretKey, err := requiredEnv(artifact.SecretKeyEnvironmentVariable)
+	artifactSecretKey, err := requiredEnv(artifactComponent.SecretKeyEnvironmentVariable)
 	if err != nil {
 		return nil, err
 	}
 
+	// SQL Database Env Configuration
 	sqlEndpoint, err := requiredEnv(sqlComponent.EndpointEnvironmentVariable)
 	if err != nil {
 		return nil, err
@@ -77,13 +87,29 @@ func (c *StaticConfig) ResolveRuntime() (*RuntimeConfig, error) {
 		return nil, err
 	}
 
+	// KeyVal Database Env Configuration
+	keyValEndpoint, err := requiredEnv(keyvalComponent.EndpointEnvironemtnVariable)
+	if err != nil {
+		return nil, err
+	}
+
+	keyValUsername, err := requiredEnv(keyvalComponent.UserNameEnvironmentVariable)
+	if err != nil {
+		return nil, err
+	}
+
+	keyValPassword, err := requiredEnv(keyvalComponent.PasswordEnvironmentVariable)
+	if err != nil {
+		return nil, err
+	}
+
 	return &RuntimeConfig{
 		Artifact: ArtifactRuntimeConfig{
 			Endpoint:   artifactEndpoint,
 			AccessKey:  artifactAccessKey,
 			SecretKey:  artifactSecretKey,
-			BucketName: artifact.BucketName,
-			RootPrefix: artifact.RootPrefix,
+			BucketName: artifactComponent.BucketName,
+			RootPrefix: artifactComponent.RootPrefix,
 		},
 		SQL: SQLRuntimeConfig{
 			Endpoint: sqlEndpoint,
@@ -91,6 +117,11 @@ func (c *StaticConfig) ResolveRuntime() (*RuntimeConfig, error) {
 			Password: sqlPassword,
 			Database: sqlComponent.DatabaseName,
 			Port:     sqlPortInt,
+		},
+		KeyVal: KeyValRuntimeConfig{
+			Endpoint: keyValEndpoint,
+			Username: keyValUsername,
+			Password: keyValPassword,
 		},
 	}, nil
 }

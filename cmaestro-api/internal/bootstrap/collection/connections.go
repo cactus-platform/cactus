@@ -2,13 +2,14 @@ package collection
 
 import (
 	"cmaestro-api/internal/config"
-	"cmaestro-db/bucket"
-	"cmaestro-db/models"
-	"cmaestro-db/sql"
 	"context"
 	"errors"
 	"fmt"
 	"log"
+
+	"github.com/cactus-platform/cmaestro-core/models"
+	"github.com/cactus-platform/cmaestro-core/storage/bucket"
+	"github.com/cactus-platform/cmaestro-core/storage/sql"
 )
 
 type Connections struct {

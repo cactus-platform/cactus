@@ -4,9 +4,6 @@ import (
 	"cmaestro-api/internal/api/transport/http/request"
 	"cmaestro-api/internal/api/transport/http/response"
 	"cmaestro-api/internal/bootstrap"
-	"cmaestro-db/bucket"
-	"cmaestro-db/dbutil"
-	"cmaestro-db/models"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +13,10 @@ import (
 	"path"
 	"strings"
 	"time"
+
+	"github.com/cactus-platform/cmaestro-core/models"
+	"github.com/cactus-platform/cmaestro-core/storage/bucket"
+	"github.com/cactus-platform/cmaestro-core/storage/dbutil"
 
 	"github.com/google/uuid"
 )

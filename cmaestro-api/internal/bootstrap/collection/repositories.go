@@ -2,8 +2,9 @@ package collection
 
 import (
 	"cmaestro-api/internal/config"
-	"cmaestro-db/repositories"
 	"context"
+
+	"github.com/cactus-platform/cmaestro-core/repositories"
 )
 
 type Repositories struct {
