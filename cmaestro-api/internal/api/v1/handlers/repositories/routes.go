@@ -227,7 +227,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	response.Created(
 		w,
 		map[string]any{
-			"status":     "created",
+			"status":     models.IngestStatusPending,
 			"id":         artifact.Id,
 			"name":       artifact.Name,
 			"path":       artifact.Path,

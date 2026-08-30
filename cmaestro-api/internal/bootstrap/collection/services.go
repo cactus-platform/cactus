@@ -2,8 +2,9 @@ package collection
 
 import (
 	"cmaestro-api/internal/config"
-	"cmaestro-api/internal/pkg/services"
 	"context"
+
+	"github.com/cactus-platform/cmaestro-core/services"
 )
 
 type Services struct {
