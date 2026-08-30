@@ -9,12 +9,14 @@ import (
 
 	"github.com/cactus-platform/cmaestro-core/models"
 	"github.com/cactus-platform/cmaestro-core/storage/bucket"
+	"github.com/cactus-platform/cmaestro-core/storage/keyval"
 	"github.com/cactus-platform/cmaestro-core/storage/sql"
 )
 
 type Connections struct {
 	SQL           *sql.Client
 	ArtifactStore *bucket.Client
+	KeyVal        *keyval.Client
 
 	closeFns []func() error
 }
@@ -45,6 +47,19 @@ func NewCollections(ctx context.Context, runtimeConfig *config.RuntimeConfig) (*
 
 	conn.SQL = sqlClient
 	conn.addCloser("SQL Database", sqlClient)
+
+	log.Println("creating [KeyVal] connection...")
+	keyValClient, err := keyval.New(keyval.Config{
+		Addr:     runtimeConfig.KeyVal.Endpoint,
+		Password: runtimeConfig.KeyVal.Password,
+		DB:       0,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("create key-value client: %w", err)
+	}
+
+	conn.KeyVal = keyValClient
+	conn.addCloser("KeyVal Database", keyValClient)
 
 	success = true
 	log.Println("Connections created!")

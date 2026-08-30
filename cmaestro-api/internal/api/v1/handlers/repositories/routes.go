@@ -206,6 +206,24 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := h.App.Services.Ingest.Ingest(r.Context(), artifact.Id); err != nil {
+		log.Printf(
+			"artifact ingest failed: %v",
+			err,
+		)
+
+		response.Fail(
+			w,
+			response.APIError{
+				Status:  http.StatusInternalServerError,
+				Code:    "internal_server_error",
+				Message: err.Error(),
+			},
+		)
+
+		return
+	}
+
 	response.Created(
 		w,
 		map[string]any{
