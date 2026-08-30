@@ -6,6 +6,8 @@ import (
 	"errors"
 	"time"
 
+	"cmaestro-api/internal/pkg/models"
+
 	"github.com/cactus-platform/cmaestro-core/storage/keyval"
 	"github.com/google/uuid"
 )
@@ -32,11 +34,11 @@ func (s *IngestServiceImpl) Ingest(ctx context.Context, artifactID uuid.UUID) er
 	}
 
 	now := time.Now().UTC()
-	value, err := json.Marshal(map[string]any{
-		"artifact_id": artifactID,
-		"status":      "pending",
-		"created_at":  now,
-		"updated_at":  now,
+	value, err := json.Marshal(models.Ingest{
+		ArtifactID: artifactID,
+		Status:     models.IngestStatusPending,
+		CreatedAt:  now,
+		UpdatedAt:  now,
 	})
 	if err != nil {
 		return err
