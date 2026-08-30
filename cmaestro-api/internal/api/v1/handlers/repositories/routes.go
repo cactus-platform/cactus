@@ -15,14 +15,20 @@ import (
 	"time"
 
 	"github.com/cactus-platform/cmaestro-core/models"
-	"github.com/cactus-platform/cmaestro-core/storage/bucket"
+	coreRepositories "github.com/cactus-platform/cmaestro-core/repositories"
 	"github.com/cactus-platform/cmaestro-core/storage/dbutil"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 )
 
 type Handler struct {
 	App *bootstrap.App
+}
+
+type createResponse struct {
+	Status     models.IngestStatus `json:"status"`
+	Repository *models.Repository  `json:"repository"`
 }
 
 func NewHandler(app *bootstrap.App) *Handler {
@@ -48,12 +54,46 @@ func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (h *Handler) Get(w http.ResponseWriter, r *http.Request) {
+	artifactID, err := uuid.Parse(chi.URLParam(r, "id"))
+	if err != nil {
+		response.Fail(w, response.APIError{
+			Status:  http.StatusBadRequest,
+			Code:    "invalid_repository_id",
+			Message: "Invalid repository ID",
+		})
+		return
+	}
+
+	artifact, err := h.App.Services.Repository.Get(r.Context(), artifactID)
+	if err != nil {
+		if errors.Is(err, coreRepositories.ErrRepositoryNotFound) {
+			response.Fail(w, response.APIError{
+				Status:  http.StatusNotFound,
+				Code:    "repository_not_found",
+				Message: "Repository not found",
+			})
+			return
+		}
+
+		log.Printf("repository lookup failed: %v", err)
+		response.Fail(w, response.APIError{
+			Status:  http.StatusInternalServerError,
+			Code:    "internal_server_error",
+			Message: "Unable to retrieve repository",
+		})
+		return
+	}
+
+	response.OK(w, artifact)
+}
+
 func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	cfg := h.App.StaticConfig.Repositories
 
-	artifact, err := loadArtifactFromRequest(
+	repository, err := loadRepositoryFromRequest(
 		r,
 		cfg.RepositoryNameFieldName,
 		cfg.RepositoryIDFieldName,
@@ -88,16 +128,49 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if artifact.Id == uuid.Nil {
-		artifact.Id = uuid.New()
+	isNewRepository := repository.ID == uuid.Nil
+	if isNewRepository {
+		repository.ID = uuid.New()
+	} else {
+		existingRepository, err := h.App.Services.Repository.Get(r.Context(), repository.ID)
+		if err != nil {
+			if errors.Is(err, coreRepositories.ErrRepositoryNotFound) {
+				response.Fail(w, response.APIError{
+					Status:  http.StatusNotFound,
+					Code:    "repository_not_found",
+					Message: "Repository not found",
+				})
+				return
+			}
+
+			log.Printf("repository lookup failed: %v", err)
+			response.Fail(w, response.APIError{
+				Status:  http.StatusInternalServerError,
+				Code:    "internal_server_error",
+				Message: "Unable to retrieve repository",
+			})
+			return
+		}
+
+		repository = existingRepository
 	}
+
+	artifact := &models.Artifact{
+		Id:   uuid.New(),
+		Name: repository.Name,
+	}
+	repository.Artifacts = []*models.Artifact{artifact}
 
 	now := time.Now()
 
+	if isNewRepository {
+		repository.CreatedAt = now
+	}
+	repository.UpdatedAt = now
 	artifact.CreatedAt = now
 	artifact.UpdatedAt = now
 
-	data, err := request.WithMultipartFile(
+	_, err = request.WithMultipartFile(
 		r,
 		cfg.FileFieldName,
 		cfg.MaxUploadSize,
@@ -113,7 +186,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 			key := fmt.Sprintf(
 				"uploads/repositories/%s/%s.zip",
-				artifact.Id,
+				repository.ID,
 				revision,
 			)
 
@@ -148,6 +221,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 			artifact.Size = object.Size
 			artifact.Format = "application/zip"
 			artifact.Status = "uploaded"
+			repository.Status = artifact.Status
 
 			return &object, nil
 		},
@@ -167,26 +241,9 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uploadedObject, ok := data.(*bucket.Object)
-
-	if !ok || uploadedObject == nil {
-
-		log.Printf(
-			"unexpected upload result type: %T",
-			data,
-		)
-
-		response.Fail(
-			w,
-			cfg.Errors.ErrorWhenUploadFails,
-		)
-
-		return
-	}
-
-	if err := h.App.Services.Artifact.CreateOrUpdateArtifact(
+	if err := h.App.Services.Repository.CreateOrUpdate(
 		r.Context(),
-		&artifact,
+		repository,
 	); err != nil {
 
 		log.Printf(
@@ -206,7 +263,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.App.Services.Ingest.Ingest(r.Context(), artifact.Id); err != nil {
+	if err := h.App.Services.Ingest.Ingest(r.Context(), repository.ID); err != nil {
 		log.Printf(
 			"artifact ingest failed: %v",
 			err,
@@ -226,45 +283,45 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 
 	response.Created(
 		w,
-		map[string]any{
-			"status":     models.IngestStatusPending,
-			"id":         artifact.Id,
-			"name":       artifact.Name,
-			"path":       artifact.Path,
-			"revision":   artifact.Revision,
-			"hash":       artifact.Hash,
-			"size":       artifact.Size,
-			"format":     artifact.Format,
-			"created_at": artifact.CreatedAt,
-			"updated_at": artifact.UpdatedAt,
-			"object":     uploadedObject,
+		createResponse{
+			Status:     models.IngestStatusPending,
+			Repository: repository,
 		},
 	)
 }
 
 var errMissingArtifactMetadata = errors.New("missing artifact metadata")
 
-func loadArtifactFromRequest(
+func loadRepositoryFromRequest(
 	r *http.Request,
 	repositoryNameFieldName string,
 	repositoryIDFieldName string,
-) (models.Artifact, error) {
-	artifact := models.Artifact{
+
+) (*models.Repository, error) {
+	repository := &models.Repository{
 		Name: strings.TrimSpace(r.FormValue(repositoryNameFieldName)),
 	}
 
-	if artifact.Name == "" {
-		return models.Artifact{}, errMissingArtifactMetadata
+	if repository.Name == "" {
+		return nil, errMissingArtifactMetadata
 	}
 
 	if idValue := strings.TrimSpace(r.FormValue(repositoryIDFieldName)); idValue != "" {
 		artifactID, err := uuid.Parse(idValue)
 		if err != nil {
-			return models.Artifact{}, fmt.Errorf("invalid repository id: %w", err)
+			return nil, fmt.Errorf("invalid repository id: %w", err)
 		}
 
-		artifact.Id = artifactID
+		repository.ID = artifactID
 	}
 
-	return artifact, nil
+	if repository.ID != uuid.Nil {
+		return repository, nil
+	}
+
+	if repository.Name == "" {
+		return nil, errMissingArtifactMetadata
+	}
+
+	return repository, nil
 }

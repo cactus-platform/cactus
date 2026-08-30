@@ -102,6 +102,7 @@ func initSQL(cfg config.SQLRuntimeConfig) (*sql.Client, error) {
 	}
 
 	err = client.AutoMigrate(
+		&models.Repository{},
 		&models.Artifact{},
 	)
 	if err != nil {

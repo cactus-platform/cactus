@@ -41,11 +41,21 @@ func RegisterRoutes(r chi.Router, app *bootstrap.App, basePath string) {
 			},
 		},
 		Responses: map[string]docs.Response{
-			"201": {Description: "Artifact created"},
+			"201": {Description: "Repository created"},
 			"400": {Description: "Invalid request"},
 		},
 	})
 
+	docs.Register("GET", basePath+"/{id}", docs.RouteMeta{
+		Summary: "Get a repository artifact",
+		Responses: map[string]docs.Response{
+			"200": {Description: "Repository artifact"},
+			"400": {Description: "Invalid repository ID"},
+			"404": {Description: "Repository not found"},
+		},
+	})
+
 	r.Get("/", h.List)
+	r.Get("/{id}", h.Get)
 	r.Post("/", h.Create)
 }
