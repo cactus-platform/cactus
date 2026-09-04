@@ -29,12 +29,23 @@ func RegisterRoutes(r chi.Router, app *bootstrap.App, basePath string) {
 			Content: map[string]docs.Content{
 				"multipart/form-data": {
 					Schema: docs.Schema{
-						Type:     "object",
-						Required: []string{"platform.cactus.repository.source", "platform.cactus.repository.name"},
-						Properties: map[string]docs.Schema{
-							"platform.cactus.repository.source": {Type: "string", Format: "binary"},
-							"platform.cactus.repository.name":   {Type: "string"},
-							"platform.cactus.repository.id":     {Type: "string"},
+						AnyOf: []docs.Schema{
+							{
+								Type:     "object",
+								Required: []string{"platform.cactus.repository.source", "platform.cactus.repository.name"},
+								Properties: map[string]docs.Schema{
+									"platform.cactus.repository.source": {Type: "string", Format: "binary"},
+									"platform.cactus.repository.name":   {Type: "string"},
+								},
+							},
+							{
+								Type:     "object",
+								Required: []string{"platform.cactus.repository.source", "platform.cactus.repository.id"},
+								Properties: map[string]docs.Schema{
+									"platform.cactus.repository.source": {Type: "string", Format: "binary"},
+									"platform.cactus.repository.id":     {Type: "string"},
+								},
+							},
 						},
 					},
 				},

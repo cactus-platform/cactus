@@ -63,6 +63,7 @@ type schema struct {
 	Items      *schema           `json:"items,omitempty"`
 	Properties map[string]schema `json:"properties,omitempty"`
 	Required   []string          `json:"required,omitempty"`
+	AnyOf      []schema          `json:"anyOf,omitempty"`
 }
 
 type RouteMeta struct {
@@ -91,6 +92,7 @@ type Schema struct {
 	Items      *Schema           `json:"items,omitempty"`
 	Properties map[string]Schema `json:"properties,omitempty"`
 	Required   []string          `json:"required,omitempty"`
+	AnyOf      []Schema          `json:"anyOf,omitempty"`
 }
 
 var (
@@ -249,6 +251,10 @@ func convertSchema(s Schema) schema {
 	for key, item := range s.Properties {
 		properties[key] = convertSchema(item)
 	}
+	anyOf := make([]schema, len(s.AnyOf))
+	for index, item := range s.AnyOf {
+		anyOf[index] = convertSchema(item)
+	}
 
 	var items *schema
 	if s.Items != nil {
@@ -262,6 +268,7 @@ func convertSchema(s Schema) schema {
 		Items:      items,
 		Properties: properties,
 		Required:   s.Required,
+		AnyOf:      anyOf,
 	}
 }
 
