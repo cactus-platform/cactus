@@ -302,10 +302,6 @@ func loadRepositoryFromRequest(
 		Name: strings.TrimSpace(r.FormValue(repositoryNameFieldName)),
 	}
 
-	if repository.Name == "" {
-		return nil, errMissingArtifactMetadata
-	}
-
 	if idValue := strings.TrimSpace(r.FormValue(repositoryIDFieldName)); idValue != "" {
 		artifactID, err := uuid.Parse(idValue)
 		if err != nil {
