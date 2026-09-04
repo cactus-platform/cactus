@@ -241,10 +241,14 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.App.Services.Repository.CreateOrUpdate(
-		r.Context(),
-		repository,
-	); err != nil {
+	var persistErr error
+	if isNewRepository {
+		persistErr = h.App.Services.Repository.Create(r.Context(), repository)
+	} else {
+		persistErr = h.App.Services.Repository.CreateRevision(r.Context(), repository)
+	}
+
+	if persistErr != nil {
 
 		log.Printf(
 			"artifact persistence failed: %v",
