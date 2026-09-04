@@ -4,17 +4,17 @@ import (
 	"cmaestro-api/internal/config"
 	"context"
 
-	"github.com/cactus-platform/cmaestro-core/services"
+	coreServices "github.com/cactus-platform/cmaestro-core/services"
 )
 
 type Services struct {
-	Artifact services.ArtifactService
-	Ingest   services.IngestService
+	Repository coreServices.RepositoryService
+	Ingest     coreServices.IngestService
 }
 
 func NewServices(ctx context.Context, runtimeConfig *config.RuntimeConfig, conns *Connections, repos *Repositories) (*Services, error) {
 	return &Services{
-		Artifact: services.NewArtifactService(repos.Artifact),
-		Ingest:   services.NewIngestService(conns.KeyVal),
+		Repository: coreServices.NewRepositoryService(repos.Repository),
+		Ingest:     coreServices.NewIngestService(conns.KeyVal),
 	}, nil
 }

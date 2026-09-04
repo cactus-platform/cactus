@@ -7,4 +7,4 @@ require (
 	github.com/google/uuid v1.6.0
 )
 
-require github.com/cactus-platform/cmaestro-core v1.1.0 // indirect
+require github.com/cactus-platform/cmaestro-core v1.3.2 // indirect
