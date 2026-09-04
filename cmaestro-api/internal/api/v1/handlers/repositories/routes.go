@@ -156,7 +156,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	artifact := &models.Artifact{
-		Id:   uuid.New(),
+		ID:   uuid.New(),
 		Name: repository.Name,
 	}
 	repository.Artifacts = []*models.Artifact{artifact}
@@ -267,7 +267,7 @@ func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.App.Services.Ingest.Ingest(r.Context(), repository.ID); err != nil {
+	if err := h.App.Services.Ingest.Ingest(r.Context(), repository); err != nil {
 		log.Printf(
 			"artifact ingest failed: %v",
 			err,
